@@ -1,0 +1,120 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX 1024
+
+// Simple XOR encryption and decryption
+void simple_encrypt_decrypt(unsigned char *data, int size, const unsigned char *key, int key_size) {
+    int i; // Declare outside the for loop (for C90 compatibility)
+    for (i = 0; i < size; i++) {
+        data[i] ^= key[i % key_size];
+    }
+}
+
+// User login
+int login() {
+    char username[MAX], password[MAX];
+    printf("Enter username: ");
+    scanf("%s", username);
+    printf("Enter password: ");
+    scanf("%s", password);
+
+    if (strcmp(username, "admin") == 0 && strcmp(password, "password") == 0) {
+        printf("Login successful!\n");
+        return 1;
+    } else {
+        printf("Invalid credentials.\n");
+        return 0;
+    }
+}
+
+// Main menu
+void menu() {
+    printf("\nSecure File Management System\n");
+    printf("1. Create File\n");
+    printf("2. View File\n");
+    printf("3. Delete File\n");
+    printf("4. Exit\n");
+}
+
+int main() {
+    if (!login()) {
+        return 1;
+    }
+
+    int choice;
+    char filename[MAX];
+    char data[MAX];
+    unsigned char key[] = "mysecurekey12345"; // 15 bytes key
+
+    while (1) {
+        menu();
+        printf("Choose an option: ");
+        scanf("%d", &choice);
+
+        FILE *file;
+        int data_size;
+
+        switch (choice) {
+            case 1:
+                printf("Enter filename: ");
+                scanf("%s", filename);
+                printf("Enter data: ");
+                getchar(); // Clear newline left by previous scanf
+                fgets(data, sizeof(data), stdin);
+                data[strcspn(data, "\n")] = '\0'; // Remove trailing newline
+
+                data_size = strlen((char *)data);
+                simple_encrypt_decrypt((unsigned char *)data, data_size, key, strlen((char *)key));
+
+                file = fopen(filename, "wb");
+                if (file == NULL) {
+                    printf("Error creating file.\n");
+                    break;
+                }
+                fwrite(data, sizeof(char), data_size, file);
+                fclose(file);
+
+                printf("File created and encrypted successfully!\n");
+                break;
+
+            case 2:
+                printf("Enter filename: ");
+                scanf("%s", filename);
+
+                file = fopen(filename, "rb");
+                if (file == NULL) {
+                    printf("Error opening file.\n");
+                    break;
+                }
+
+                data_size = fread(data, sizeof(char), MAX, file);
+                fclose(file);
+
+                simple_encrypt_decrypt((unsigned char *)data, data_size, key, strlen((char *)key));
+                data[data_size] = '\0'; // Null-terminate the string
+
+                printf("Decrypted Data: %s\n", data);
+                break;
+
+            case 3:
+                printf("Enter filename: ");
+                scanf("%s", filename);
+                if (remove(filename) == 0)
+                    printf("File deleted successfully!\n");
+                else
+                    printf("Unable to delete the file.\n");
+                break;
+
+            case 4:
+                printf("Exiting... Goodbye!\n");
+                exit(0);
+
+            default:
+                printf("Invalid choice. Try again.\n");
+        }
+    }
+
+    return 0;
+}
